@@ -28,8 +28,7 @@ public class UserRepository : IUserRepository
         } else {
             response = Response.Conflict;
         }
-        var created = new UserDTO(entity!.Id, entity.Name, entity.Email);
-        return (response, created.Id);
+        return (response, entity!.Id);
     }
 
     public Response Delete(int userId, bool force = false)
@@ -38,6 +37,7 @@ public class UserRepository : IUserRepository
         Response response;
         if(entity != null && (entity.Items.Count == 0 || force)) {
             _context.Users.Remove(entity);
+            _context.SaveChanges();
             response = Response.Deleted;
 
         } else {
@@ -49,18 +49,18 @@ public class UserRepository : IUserRepository
 
     public UserDTO? Find(int userId)
     {
-        var entity = _context.Users.FirstOrDefault(u => u.Id == userId);
-        if(entity == null) {
-            return null;
-        }
-        return new UserDTO(entity!.Id, entity.Name, entity.Email);
+        var User = from u in _context.Users
+                     where u.Id == userId
+                     select new UserDTO(u.Id, u.Name, u.Email);
+        return User.FirstOrDefault();
     }
 
     public IReadOnlyCollection<UserDTO> Read()
     {
-        var users = from u in _context.Users
-                     orderby u.Name
-                     select new UserDTO(u.Id, u.Name, u.Email);
+        var users = 
+            from u in _context.Users
+            orderby u.Name
+            select new UserDTO(u.Id, u.Name, u.Email);
 
         return users.ToArray();
     }
